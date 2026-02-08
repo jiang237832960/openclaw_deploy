@@ -2,270 +2,481 @@
 chcp 65001 >nul
 title OpenClaw + Ollama 一键部署工具
 
-echo ===============================================
-echo OpenClaw + Ollama + 云模型一键部署程序
- echo 专为小白用户设计 - 全程自动化
- echo ===============================================
+:: 定义日志文件
+set "LOG_FILE=%~dp0deploy.log"
+
+:: 清空日志文件
+echo [%date% %time%] OpenClaw + Ollama 部署开始 > "%LOG_FILE%"
+
+:: 输出到控制台和日志
+set "ECHO_CMD=^>^> "%LOG_FILE%" ^& echo"
+
+:: 定义颜色
+set "GREEN=[92m"
+set "YELLOW=[93m"
+set "RED=[91m"
+set "BLUE=[94m"
+set "CYAN=[96m"
+set "RESET=[0m"
+
+:: 定义变量
+set "DEPLOY_VERSION=1.0.0"
+set "DEPLOY_DATE=%date%"
+set "DEPLOY_TIME=%time%"
+
+echo %BLUE%===============================================
+部署工具版本: %DEPLOY_VERSION%
+部署日期: %DEPLOY_DATE%
+部署时间: %DEPLOY_TIME%
+===============================================
+%RESET%
+echo [%date% %time%] 部署工具版本: %DEPLOY_VERSION% >> "%LOG_FILE%"
+echo [%date% %time%] 部署日期: %DEPLOY_DATE% >> "%LOG_FILE%"
+echo [%date% %time%] 部署时间: %DEPLOY_TIME% >> "%LOG_FILE%"
+
+echo %GREEN%===============================================%RESET%
+echo %GREEN%OpenClaw + Ollama + 云模型一键部署程序%RESET%
+echo %GREEN%专为小白用户设计 - 全程自动化%RESET%
+echo %GREEN%===============================================%RESET%
 echo.
-echo 🔍 正在进行系统环境检测...
+echo %GREEN%🔍 正在进行系统环境检测...%RESET%
 
 :: 检查管理员权限
-echo 🔐 检查管理员权限...
+echo %GREEN%🔐 检查管理员权限...%RESET%
+echo [%date% %time%] 检查管理员权限 >> "%LOG_FILE%"
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo ❌ 错误: 需要管理员权限运行此脚本!
-    echo 💡 请右键点击脚本，选择"以管理员身份运行"
-    echo ⏳ 5秒后自动退出...
+    echo %RED%❌ 错误: 需要管理员权限运行此脚本!%RESET%
+    echo %YELLOW%💡 请右键点击脚本，选择"以管理员身份运行"%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: 需要管理员权限运行此脚本! >> "%LOG_FILE%"
     timeout /t 5 >nul
     exit /b 1
 )
-echo ✅ 管理员权限检查通过
+echo %GREEN%✅ 管理员权限检查通过%RESET%
+echo [%date% %time%] 管理员权限检查通过 >> "%LOG_FILE%"
 
 :: 检查网络连接
-echo 🌐 检查网络连接...
+echo %GREEN%🌐 检查网络连接...%RESET%
+echo [%date% %time%] 检查网络连接 >> "%LOG_FILE%"
 ping -n 1 google.com >nul
 if %errorLevel% neq 0 (
-    echo ❌ 错误: 网络连接失败!
-    echo 💡 请检查网络连接后重试
-    echo ⏳ 5秒后自动退出...
+    echo %RED%❌ 错误: 网络连接失败!%RESET%
+    echo %YELLOW%💡 请检查网络连接后重试%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: 网络连接失败! >> "%LOG_FILE%"
     timeout /t 5 >nul
     exit /b 1
 )
-echo ✅ 网络连接检查通过
+echo %GREEN%✅ 网络连接检查通过%RESET%
+echo [%date% %time%] 网络连接检查通过 >> "%LOG_FILE%"
 
 :: 检查系统版本
-echo 💻 检查系统版本...
+echo %GREEN%💻 检查系统版本...%RESET%
+echo [%date% %time%] 检查系统版本 >> "%LOG_FILE%"
+ver > "%LOG_FILE%"
 ver | findstr "Windows 10\|Windows 11" >nul
 if %errorLevel% neq 0 (
-    echo ⚠️  警告: 系统版本可能不完全兼容
-    echo 💡 推荐使用 Windows 10 或 Windows 11
-    echo 📌 继续部署...
+    echo %YELLOW%⚠️  警告: 系统版本可能不完全兼容%RESET%
+    echo %YELLOW%💡 推荐使用 Windows 10 或 Windows 11%RESET%
+    echo %YELLOW%📌 继续部署...%RESET%
+    echo [%date% %time%] 警告: 系统版本可能不完全兼容 >> "%LOG_FILE%"
 ) else (
-    echo ✅ 系统版本检查通过
+    echo %GREEN%✅ 系统版本检查通过%RESET%
+    echo [%date% %time%] 系统版本检查通过 >> "%LOG_FILE%"
 )
 
+:: 检查CPU信息
+echo %GREEN%⚙️  检查CPU信息...%RESET%
+echo [%date% %time%] 检查CPU信息 >> "%LOG_FILE%"
+powershell -Command "try { $cpu = Get-WmiObject -Class Win32_Processor -ErrorAction Stop; $cores = $cpu.NumberOfCores; $logicalProcessors = $cpu.NumberOfLogicalProcessors; Write-Host '✅ CPU: ' $cpu.Name -ForegroundColor Green; Write-Host '✅ 核心数: ' $cores -ForegroundColor Green; Write-Host '✅ 线程数: ' $logicalProcessors -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] CPU: ' + $cpu.Name); Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 核心数: ' + $cores); Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 线程数: ' + $logicalProcessors) } catch { Write-Host '⚠️  无法获取CPU信息' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: 无法获取CPU信息') }"
+
+:: 检查内存信息
+echo %GREEN%📊 检查内存信息...%RESET%
+echo [%date% %time%] 检查内存信息 >> "%LOG_FILE%"
+powershell -Command "try { $memory = Get-WmiObject -Class Win32_ComputerSystem -ErrorAction Stop; $totalRam = [math]::Round($memory.TotalPhysicalMemory / 1GB, 2); Write-Host '✅ 总内存: ' $totalRam 'GB' -ForegroundColor Green; if ($totalRam -lt 8) { Write-Host '⚠️  警告: 内存不足8GB，可能影响性能' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: 内存不足8GB，可能影响性能') } else { Write-Host '✅ 内存检查通过' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 内存检查通过: ' + $totalRam + 'GB') } } catch { Write-Host '⚠️  无法获取内存信息' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: 无法获取内存信息') }"
+
+:: 检查网络速度
+echo %GREEN%🌐 检查网络速度...%RESET%
+echo [%date% %time%] 检查网络速度 >> "%LOG_FILE%"
+powershell -Command "try { Write-Host '正在测试网络速度，请稍候...' -ForegroundColor Cyan; $startTime = Get-Date; $response = Invoke-WebRequest -Uri 'https://www.google.com' -UseBasicParsing -ErrorAction Stop; $endTime = Get-Date; $timeTaken = ($endTime - $startTime).TotalMilliseconds; Write-Host '✅ 网络响应时间: ' ([math]::Round($timeTaken, 2)) 'ms' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 网络响应时间: ' + ([math]::Round($timeTaken, 2)) + 'ms') } catch { Write-Host '⚠️  网络速度测试失败，继续部署...' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: 网络速度测试失败，继续部署...') }"
+
 :: 检查磁盘空间
-echo 📁 检查磁盘空间...
+echo %GREEN%📁 检查磁盘空间...%RESET%
+echo [%date% %time%] 检查磁盘空间 >> "%LOG_FILE%"
 for /f "tokens=3" %%a in ('dir /-c /w ^| find "字节" ^| find /v "可用字节"') do set totalspace=%%a
 echo 总磁盘空间: %totalspace% 字节
+echo [%date% %time%] 总磁盘空间: %totalspace% 字节 >> "%LOG_FILE%"
 for /f "tokens=3" %%a in ('dir /-c /w ^| find "可用字节"') do set freespace=%%a
 echo 可用磁盘空间: %freespace% 字节
+echo [%date% %time%] 可用磁盘空间: %freespace% 字节 >> "%LOG_FILE%"
 
 :: 转换为GB进行比较
 set /a freespace_gb=%freespace:~0,-9%
 if %freespace_gb% lss 20 (
-    echo ⚠️  警告: 可用磁盘空间不足20GB
-    echo 💡 建议至少保留20GB磁盘空间
-    echo 📌 继续部署...
+    echo %YELLOW%⚠️  警告: 可用磁盘空间不足20GB%RESET%
+    echo %YELLOW%💡 建议至少保留20GB磁盘空间%RESET%
+    echo %YELLOW%📌 继续部署...%RESET%
+    echo [%date% %time%] 警告: 可用磁盘空间不足20GB >> "%LOG_FILE%"
 ) else (
-    echo ✅ 磁盘空间检查通过
+    echo %GREEN%✅ 磁盘空间检查通过%RESET%
+    echo [%date% %time%] 磁盘空间检查通过 >> "%LOG_FILE%"
 )
 
-echo ✅ 系统环境检测完成
+echo %GREEN%✅ 系统环境检测完成%RESET%
+echo [%date% %time%] 系统环境检测完成 >> "%LOG_FILE%"
 
 echo.
-echo 📁 正在创建目录结构...
+echo %GREEN%📁 正在创建目录结构...%RESET%
+echo [%date% %time%] 开始创建目录结构 >> "%LOG_FILE%"
 
 :: 定义母文件夹路径
 set "PARENT_DIR=D:\AI_Agent_Deploy"
+echo [%date% %time%] 母文件夹路径: %PARENT_DIR% >> "%LOG_FILE%"
 
 :: 创建母文件夹
-echo 📁 创建母文件夹...
+echo %GREEN%📁 创建母文件夹...%RESET%
+echo [%date% %time%] 检查母文件夹是否存在 >> "%LOG_FILE%"
 if not exist "%PARENT_DIR%" (
+    echo [%date% %time%] 创建母文件夹: %PARENT_DIR% >> "%LOG_FILE%"
     md "%PARENT_DIR%"
-    echo ✅ 母文件夹创建完成
-) else (
-    echo ✅ 母文件夹已存在
-)
-
-:: 设置工作目录为母文件夹
-cd /d "%PARENT_DIR%"
-echo ✅ 切换到母文件夹
-
-:: 创建子目录
-echo 📁 创建子目录...
-if not exist "%PARENT_DIR%\downloads" md "%PARENT_DIR%\downloads"
-if not exist "%PARENT_DIR%\downloads\nodejs" md "%PARENT_DIR%\downloads\nodejs"
-if not exist "%PARENT_DIR%\downloads\python" md "%PARENT_DIR%\downloads\python"
-if not exist "%PARENT_DIR%\downloads\ollama" md "%PARENT_DIR%\downloads\ollama"
-if not exist "%PARENT_DIR%\nodejs" md "%PARENT_DIR%\nodejs"
-if not exist "%PARENT_DIR%\python" md "%PARENT_DIR%\python"
-if not exist "%PARENT_DIR%\ollama" md "%PARENT_DIR%\ollama"
-if not exist "%PARENT_DIR%\openclaw" md "%PARENT_DIR%\openclaw"
-if not exist "%PARENT_DIR%\config" md "%PARENT_DIR%\config"
-if not exist "%PARENT_DIR%\logs" md "%PARENT_DIR%\logs"
-echo ✅ 目录结构创建完成
-
-:: 更新当前路径变量
-set "CURRENT_DIR=%PARENT_DIR%"
-
-echo.
-echo 📦 正在下载必要组件...
-
-:: 下载 Node.js
-echo 📥 下载 Node.js v22...
-powershell -Command "Write-Host '正在下载 Node.js，请稍候...' -ForegroundColor Green"
-powershell -Command "try { Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.18.0/node-v22.18.0-x64.msi' -OutFile '%CURRENT_DIR%\downloads\nodejs\nodejs.msi' -ErrorAction Stop; Write-Host '下载完成!' -ForegroundColor Green } catch { Write-Host '下载失败，正在重试...' -ForegroundColor Yellow; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.18.0/node-v22.18.0-x64.msi' -OutFile '%CURRENT_DIR%\downloads\nodejs\nodejs.msi' }"
-if not exist "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" (
-    echo ❌ 错误: Node.js 下载失败!
-    echo 💡 请检查网络连接后重试
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Node.js 下载完成
-
-:: 安装 Node.js
-echo 🚀 安装 Node.js...
-echo 📌 安装过程可能需要几分钟，请耐心等待...
-msiexec /i "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" /qn INSTALLDIR="%CURRENT_DIR%\nodejs"
-if %errorLevel% neq 0 (
-    echo ❌ 错误: Node.js 安装失败!
-    echo 💡 可能是权限问题，请确保以管理员身份运行
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Node.js 安装完成
-
-:: 下载 Python
-echo 📥 下载 Python 3.12...
-powershell -Command "Write-Host '正在下载 Python，请稍候...' -ForegroundColor Green"
-powershell -Command "try { Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe' -OutFile '%CURRENT_DIR%\downloads\python\python.exe' -ErrorAction Stop; Write-Host '下载完成!' -ForegroundColor Green } catch { Write-Host '下载失败，正在重试...' -ForegroundColor Yellow; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe' -OutFile '%CURRENT_DIR%\downloads\python\python.exe' }"
-if not exist "%CURRENT_DIR%\downloads\python\python.exe" (
-    echo ❌ 错误: Python 下载失败!
-    echo 💡 请检查网络连接后重试
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Python 下载完成
-
-:: 安装 Python
-echo 🚀 安装 Python...
-echo 📌 安装过程可能需要几分钟，请耐心等待...
-"%CURRENT_DIR%\downloads\python\python.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 TargetDir="%CURRENT_DIR%\python"
-if %errorLevel% neq 0 (
-    echo ❌ 错误: Python 安装失败!
-    echo 💡 可能是权限问题，请确保以管理员身份运行
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Python 安装完成
-
-:: 安装 pnpm
-echo 📦 安装 pnpm 包管理器...
-"%CURRENT_DIR%\nodejs\npm" install -g pnpm --silent
-if %errorLevel% neq 0 (
-    echo ⚠️  警告: pnpm 安装失败，将使用 npm 替代
-    echo 📌 继续部署...
-) else (
-    echo ✅ pnpm 安装完成
-)
-
-:: 下载 Ollama
-echo 📥 下载 Ollama...
-powershell -Command "Write-Host '正在下载 Ollama，请稍候...' -ForegroundColor Green"
-powershell -Command "try { Invoke-WebRequest -Uri 'https://ollama.com/download/OllamaSetup.exe' -OutFile '%CURRENT_DIR%\downloads\ollama\ollama.exe' -ErrorAction Stop; Write-Host '下载完成!' -ForegroundColor Green } catch { Write-Host '下载失败，正在重试...' -ForegroundColor Yellow; Invoke-WebRequest -Uri 'https://ollama.com/download/OllamaSetup.exe' -OutFile '%CURRENT_DIR%\downloads\ollama\ollama.exe' }"
-if not exist "%CURRENT_DIR%\downloads\ollama\ollama.exe" (
-    echo ❌ 错误: Ollama 下载失败!
-    echo 💡 请检查网络连接后重试
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Ollama 下载完成
-
-:: 安装 Ollama
-echo 🚀 安装 Ollama...
-echo 📌 安装过程可能需要几分钟，请耐心等待...
-"%CURRENT_DIR%\downloads\ollama\ollama.exe" /S /D="%CURRENT_DIR%\ollama"
-if %errorLevel% neq 0 (
-    echo ❌ 错误: Ollama 安装失败!
-    echo 💡 可能是权限问题，请确保以管理员身份运行
-    echo ⏳ 5秒后自动退出...
-    timeout /t 5 >nul
-    exit /b 1
-)
-echo ✅ Ollama 安装完成
-
-:: 设置环境变量
-echo ⚙️ 设置 Ollama 环境变量...
-setx OLLAMA_HOST "0.0.0.0:11434" /M
-setx OLLAMA_MODELS "%CURRENT_DIR%\ollama" /M
-setx OLLAMA_ORIGINS "*" /M
-echo ✅ 环境变量设置完成
-
-:: 启动 Ollama 服务
-echo 🚀 启动 Ollama 服务...
-echo 📌 服务启动可能需要几秒钟，请耐心等待...
-sc start ollama >nul
-if %errorLevel% neq 0 (
-    echo ⚠️  警告: 无法通过服务启动 Ollama
-    echo 💡 正在尝试手动启动...
-    start "Ollama 服务" /min "%CURRENT_DIR%\ollama\ollama.exe" serve
-    if %errorLevel% neq 0 (
-        echo ❌ 错误: Ollama 服务启动失败!
-        echo 💡 请检查系统服务设置
-        echo ⏳ 5秒后自动退出...
+    if %errorLevel% equ 0 (
+        echo %GREEN%✅ 母文件夹创建完成%RESET%
+        echo [%date% %time%] 母文件夹创建完成 >> "%LOG_FILE%"
+    ) else (
+        echo %RED%❌ 错误: 母文件夹创建失败!%RESET%
+        echo %YELLOW%💡 请检查磁盘权限%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: 母文件夹创建失败! >> "%LOG_FILE%"
         timeout /t 5 >nul
         exit /b 1
     )
-    echo ✅ Ollama 服务手动启动成功
 ) else (
-    echo ✅ Ollama 服务启动成功
+    echo %GREEN%✅ 母文件夹已存在%RESET%
+    echo [%date% %time%] 母文件夹已存在 >> "%LOG_FILE%"
 )
 
-:: 等待 Ollama 服务启动
-echo ⏳ 等待 Ollama 服务初始化...
-timeout /t 3 >nul
-
-:: 检查 Ollama 服务状态
-echo 🔍 检查 Ollama 服务状态...
-powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:11434' -UseBasicParsing -ErrorAction Stop; Write-Host '✅ Ollama 服务状态正常' -ForegroundColor Green } catch { Write-Host '⚠️  Ollama 服务可能尚未完全启动，继续部署...' -ForegroundColor Yellow }"
-
-:: 克隆 OpenClaw 仓库
-echo 📥 下载 OpenClaw...
-echo 📌 下载过程可能需要几分钟，请耐心等待...
-powershell -Command "Write-Host '正在下载 OpenClaw，请稍候...' -ForegroundColor Green"
-powershell -Command "try { git clone https://github.com/mariozechner/openclaw.git '%CURRENT_DIR%\openclaw' 2>$null; if (Test-Path '%CURRENT_DIR%\openclaw') { Write-Host '✅ OpenClaw 下载完成' -ForegroundColor Green } else { throw '下载失败' } } catch { Write-Host '❌ OpenClaw 下载失败' -ForegroundColor Red; Write-Host '💡 正在尝试备用下载方式...' -ForegroundColor Yellow; New-Item -ItemType Directory -Path '%CURRENT_DIR%\openclaw' -Force; Write-Host '✅ 创建 OpenClaw 目录成功' -ForegroundColor Green }"
-if not exist "%CURRENT_DIR%\openclaw" (
-    echo ❌ 错误: OpenClaw 下载失败!
-    echo 💡 请检查网络连接后重试
-    echo ⏳ 5秒后自动退出...
+:: 设置工作目录为母文件夹
+echo [%date% %time%] 切换到母文件夹 >> "%LOG_FILE%"
+cd /d "%PARENT_DIR%"
+if %errorLevel% equ 0 (
+    echo %GREEN%✅ 切换到母文件夹%RESET%
+    echo [%date% %time%] 切换到母文件夹成功 >> "%LOG_FILE%"
+) else (
+    echo %RED%❌ 错误: 切换到母文件夹失败!%RESET%
+    echo %YELLOW%💡 请检查目录权限%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: 切换到母文件夹失败! >> "%LOG_FILE%"
     timeout /t 5 >nul
     exit /b 1
 )
-echo ✅ OpenClaw 下载完成
+
+:: 创建子目录
+echo %GREEN%📁 创建子目录...%RESET%
+echo [%date% %time%] 开始创建子目录 >> "%LOG_FILE%"
+
+:: 定义子目录列表
+set "SUBDIRS=downloads downloads\nodejs downloads\python downloads\ollama nodejs python ollama openclaw config logs"
+
+:: 循环创建子目录
+for %%d in (%SUBDIRS%) do (
+    if not exist "%%d" (
+        echo [%date% %time%] 创建子目录: %%d >> "%LOG_FILE%"
+        md "%%d"
+        if %errorLevel% equ 0 (
+            echo %GREEN%✅ 创建子目录: %%d%RESET%
+            echo [%date% %time%] 子目录创建成功: %%d >> "%LOG_FILE%"
+        ) else (
+            echo %YELLOW%⚠️  警告: 创建子目录 %%d 失败%RESET%
+            echo [%date% %time%] 警告: 创建子目录 %%d 失败 >> "%LOG_FILE%"
+        )
+    ) else (
+        echo %GREEN%✅ 子目录已存在: %%d%RESET%
+        echo [%date% %time%] 子目录已存在: %%d >> "%LOG_FILE%"
+    )
+)
+
+echo %GREEN%✅ 目录结构创建完成%RESET%
+echo [%date% %time%] 目录结构创建完成 >> "%LOG_FILE%"
+
+:: 更新当前路径变量
+set "CURRENT_DIR=%PARENT_DIR%"
+echo [%date% %time%] 当前路径变量: %CURRENT_DIR% >> "%LOG_FILE%"
+
+echo.
+echo %GREEN%📦 正在下载必要组件...%RESET%
+echo [%date% %time%] 开始下载必要组件 >> "%LOG_FILE%"
+
+:: 下载 Node.js
+echo %GREEN%📥 下载 Node.js v22...%RESET%
+echo [%date% %time%] 开始下载 Node.js v22 >> "%LOG_FILE%"
+
+:: 检查 Node.js 安装包是否已存在
+if exist "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" (
+    echo %GREEN%✅ Node.js 安装包已存在，跳过下载%RESET%
+    echo [%date% %time%] Node.js 安装包已存在，跳过下载 >> "%LOG_FILE%"
+) else (
+    powershell -Command "try { Write-Host '正在下载 Node.js，请稍候...' -ForegroundColor Cyan; $url = 'https://nodejs.org/dist/v22.18.0/node-v22.18.0-x64.msi'; $output = '%CURRENT_DIR%\downloads\nodejs\nodejs.msi'; $retryCount = 0; $maxRetries = 3; while ($retryCount -lt $maxRetries) { try { Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop -ProgressAction { param($source, $eventArgs) if ($eventArgs.ProgressPercentage -gt 0 -and $eventArgs.ProgressPercentage % 10 -eq 0) { Write-Host ('下载进度: ' + $eventArgs.ProgressPercentage + '%') -ForegroundColor Cyan } }; Write-Host '✅ 下载完成!' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] Node.js 下载完成'); break } catch { $retryCount++; if ($retryCount -lt $maxRetries) { Write-Host ('下载失败，正在重试 (' + $retryCount + '/' + $maxRetries + ')...') -ForegroundColor Yellow; Start-Sleep -Seconds 2 } else { throw } } } } catch { Write-Host '❌ 下载失败!' -ForegroundColor Red; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 错误: Node.js 下载失败'); exit 1 }"
+    if not exist "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" (
+        echo %RED%❌ 错误: Node.js 下载失败!%RESET%
+        echo %YELLOW%💡 请检查网络连接后重试%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: Node.js 下载失败! >> "%LOG_FILE%"
+        timeout /t 5 >nul
+        exit /b 1
+    ) else (
+        echo %GREEN%✅ Node.js 下载完成%RESET%
+        echo [%date% %time%] Node.js 下载完成 >> "%LOG_FILE%"
+    )
+)
+
+:: 安装 Node.js
+echo %GREEN%🚀 安装 Node.js...%RESET%
+echo %YELLOW%📌 安装过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始安装 Node.js >> "%LOG_FILE%"
+echo [%date% %time%] 安装命令: msiexec /i "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" /qn INSTALLDIR="%CURRENT_DIR%\nodejs" >> "%LOG_FILE%"
+msiexec /i "%CURRENT_DIR%\downloads\nodejs\nodejs.msi" /qn INSTALLDIR="%CURRENT_DIR%\nodejs"
+if %errorLevel% neq 0 (
+    echo %RED%❌ 错误: Node.js 安装失败!%RESET%
+    echo %YELLOW%💡 可能是权限问题，请确保以管理员身份运行%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: Node.js 安装失败! 错误代码: %errorLevel% >> "%LOG_FILE%"
+    timeout /t 5 >nul
+    exit /b 1
+) else (
+    echo %GREEN%✅ Node.js 安装完成%RESET%
+    echo [%date% %time%] Node.js 安装完成 >> "%LOG_FILE%"
+)
+
+:: 下载 Python
+echo %GREEN%📥 下载 Python 3.12...%RESET%
+echo [%date% %time%] 开始下载 Python 3.12 >> "%LOG_FILE%"
+
+:: 检查 Python 安装包是否已存在
+if exist "%CURRENT_DIR%\downloads\python\python.exe" (
+    echo %GREEN%✅ Python 安装包已存在，跳过下载%RESET%
+    echo [%date% %time%] Python 安装包已存在，跳过下载 >> "%LOG_FILE%"
+) else (
+    powershell -Command "try { Write-Host '正在下载 Python，请稍候...' -ForegroundColor Cyan; $url = 'https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe'; $output = '%CURRENT_DIR%\downloads\python\python.exe'; $retryCount = 0; $maxRetries = 3; while ($retryCount -lt $maxRetries) { try { Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop -ProgressAction { param($source, $eventArgs) if ($eventArgs.ProgressPercentage -gt 0 -and $eventArgs.ProgressPercentage % 10 -eq 0) { Write-Host ('下载进度: ' + $eventArgs.ProgressPercentage + '%') -ForegroundColor Cyan } }; Write-Host '✅ 下载完成!' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] Python 下载完成'); break } catch { $retryCount++; if ($retryCount -lt $maxRetries) { Write-Host ('下载失败，正在重试 (' + $retryCount + '/' + $maxRetries + ')...') -ForegroundColor Yellow; Start-Sleep -Seconds 2 } else { throw } } } } catch { Write-Host '❌ 下载失败!' -ForegroundColor Red; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 错误: Python 下载失败'); exit 1 }"
+    if not exist "%CURRENT_DIR%\downloads\python\python.exe" (
+        echo %RED%❌ 错误: Python 下载失败!%RESET%
+        echo %YELLOW%💡 请检查网络连接后重试%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: Python 下载失败! >> "%LOG_FILE%"
+        timeout /t 5 >nul
+        exit /b 1
+    ) else (
+        echo %GREEN%✅ Python 下载完成%RESET%
+        echo [%date% %time%] Python 下载完成 >> "%LOG_FILE%"
+    )
+)
+
+:: 安装 Python
+echo %GREEN%🚀 安装 Python...%RESET%
+echo %YELLOW%📌 安装过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始安装 Python >> "%LOG_FILE%"
+echo [%date% %time%] 安装命令: "%CURRENT_DIR%\downloads\python\python.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 TargetDir="%CURRENT_DIR%\python" >> "%LOG_FILE%"
+"%CURRENT_DIR%\downloads\python\python.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 TargetDir="%CURRENT_DIR%\python"
+if %errorLevel% neq 0 (
+    echo %RED%❌ 错误: Python 安装失败!%RESET%
+    echo %YELLOW%💡 可能是权限问题，请确保以管理员身份运行%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: Python 安装失败! 错误代码: %errorLevel% >> "%LOG_FILE%"
+    timeout /t 5 >nul
+    exit /b 1
+) else (
+    echo %GREEN%✅ Python 安装完成%RESET%
+    echo [%date% %time%] Python 安装完成 >> "%LOG_FILE%"
+)
+
+:: 安装 pnpm
+echo %GREEN%📦 安装 pnpm 包管理器...%RESET%
+echo [%date% %time%] 开始安装 pnpm 包管理器 >> "%LOG_FILE%"
+echo [%date% %time%] 安装命令: "%CURRENT_DIR%\nodejs\npm" install -g pnpm --silent >> "%LOG_FILE%"
+"%CURRENT_DIR%\nodejs\npm" install -g pnpm --silent
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: pnpm 安装失败，将使用 npm 替代%RESET%
+    echo %YELLOW%📌 继续部署...%RESET%
+    echo [%date% %time%] 警告: pnpm 安装失败，将使用 npm 替代 >> "%LOG_FILE%"
+) else (
+    echo %GREEN%✅ pnpm 安装完成%RESET%
+    echo [%date% %time%] pnpm 安装完成 >> "%LOG_FILE%"
+)
+
+:: 下载 Ollama
+echo %GREEN%📥 下载 Ollama...%RESET%
+echo [%date% %time%] 开始下载 Ollama >> "%LOG_FILE%"
+
+:: 检查 Ollama 安装包是否已存在
+if exist "%CURRENT_DIR%\downloads\ollama\ollama.exe" (
+    echo %GREEN%✅ Ollama 安装包已存在，跳过下载%RESET%
+    echo [%date% %time%] Ollama 安装包已存在，跳过下载 >> "%LOG_FILE%"
+) else (
+    powershell -Command "try { Write-Host '正在下载 Ollama，请稍候...' -ForegroundColor Cyan; $url = 'https://ollama.com/download/OllamaSetup.exe'; $output = '%CURRENT_DIR%\downloads\ollama\ollama.exe'; $retryCount = 0; $maxRetries = 3; while ($retryCount -lt $maxRetries) { try { Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop -ProgressAction { param($source, $eventArgs) if ($eventArgs.ProgressPercentage -gt 0 -and $eventArgs.ProgressPercentage % 10 -eq 0) { Write-Host ('下载进度: ' + $eventArgs.ProgressPercentage + '%') -ForegroundColor Cyan } }; Write-Host '✅ 下载完成!' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] Ollama 下载完成'); break } catch { $retryCount++; if ($retryCount -lt $maxRetries) { Write-Host ('下载失败，正在重试 (' + $retryCount + '/' + $maxRetries + ')...') -ForegroundColor Yellow; Start-Sleep -Seconds 2 } else { throw } } } } catch { Write-Host '❌ 下载失败!' -ForegroundColor Red; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 错误: Ollama 下载失败'); exit 1 }"
+    if not exist "%CURRENT_DIR%\downloads\ollama\ollama.exe" (
+        echo %RED%❌ 错误: Ollama 下载失败!%RESET%
+        echo %YELLOW%💡 请检查网络连接后重试%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: Ollama 下载失败! >> "%LOG_FILE%"
+        timeout /t 5 >nul
+        exit /b 1
+    ) else (
+        echo %GREEN%✅ Ollama 下载完成%RESET%
+        echo [%date% %time%] Ollama 下载完成 >> "%LOG_FILE%"
+    )
+)
+
+:: 安装 Ollama
+echo %GREEN%🚀 安装 Ollama...%RESET%
+echo %YELLOW%📌 安装过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始安装 Ollama >> "%LOG_FILE%"
+echo [%date% %time%] 安装命令: "%CURRENT_DIR%\downloads\ollama\ollama.exe" /S /D="%CURRENT_DIR%\ollama" >> "%LOG_FILE%"
+"%CURRENT_DIR%\downloads\ollama\ollama.exe" /S /D="%CURRENT_DIR%\ollama"
+if %errorLevel% neq 0 (
+    echo %RED%❌ 错误: Ollama 安装失败!%RESET%
+    echo %YELLOW%💡 可能是权限问题，请确保以管理员身份运行%RESET%
+    echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+    echo [%date% %time%] 错误: Ollama 安装失败! 错误代码: %errorLevel% >> "%LOG_FILE%"
+    timeout /t 5 >nul
+    exit /b 1
+) else (
+    echo %GREEN%✅ Ollama 安装完成%RESET%
+    echo [%date% %time%] Ollama 安装完成 >> "%LOG_FILE%"
+)
+
+:: 设置环境变量
+echo %GREEN%⚙️ 设置 Ollama 环境变量...%RESET%
+echo [%date% %time%] 开始设置 Ollama 环境变量 >> "%LOG_FILE%"
+
+:: 设置 OLLAMA_HOST
+echo [%date% %time%] 设置环境变量: OLLAMA_HOST=0.0.0.0:11434 >> "%LOG_FILE%"
+setx OLLAMA_HOST "0.0.0.0:11434" /M
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: OLLAMA_HOST 环境变量设置失败%RESET%
+    echo [%date% %time%] 警告: OLLAMA_HOST 环境变量设置失败 >> "%LOG_FILE%"
+)
+
+:: 设置 OLLAMA_MODELS
+echo [%date% %time%] 设置环境变量: OLLAMA_MODELS=%CURRENT_DIR%\ollama >> "%LOG_FILE%"
+setx OLLAMA_MODELS "%CURRENT_DIR%\ollama" /M
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: OLLAMA_MODELS 环境变量设置失败%RESET%
+    echo [%date% %time%] 警告: OLLAMA_MODELS 环境变量设置失败 >> "%LOG_FILE%"
+)
+
+:: 设置 OLLAMA_ORIGINS
+echo [%date% %time%] 设置环境变量: OLLAMA_ORIGINS=* >> "%LOG_FILE%"
+setx OLLAMA_ORIGINS "*" /M
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: OLLAMA_ORIGINS 环境变量设置失败%RESET%
+    echo [%date% %time%] 警告: OLLAMA_ORIGINS 环境变量设置失败 >> "%LOG_FILE%"
+)
+
+echo %GREEN%✅ 环境变量设置完成%RESET%
+echo [%date% %time%] 环境变量设置完成 >> "%LOG_FILE%"
+
+:: 启动 Ollama 服务
+echo %GREEN%🚀 启动 Ollama 服务...%RESET%
+echo %YELLOW%📌 服务启动可能需要几秒钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始启动 Ollama 服务 >> "%LOG_FILE%"
+
+:: 尝试通过服务启动 Ollama
+echo [%date% %time%] 尝试通过服务启动 Ollama >> "%LOG_FILE%"
+sc start ollama >nul
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: 无法通过服务启动 Ollama%RESET%
+    echo %YELLOW%💡 正在尝试手动启动...%RESET%
+    echo [%date% %time%] 无法通过服务启动 Ollama，尝试手动启动 >> "%LOG_FILE%"
+    
+    :: 尝试手动启动 Ollama
+    echo [%date% %time%] 尝试手动启动 Ollama: %CURRENT_DIR%\ollama\ollama.exe serve >> "%LOG_FILE%"
+    start "Ollama 服务" /min "%CURRENT_DIR%\ollama\ollama.exe" serve
+    if %errorLevel% neq 0 (
+        echo %RED%❌ 错误: Ollama 服务启动失败!%RESET%
+        echo %YELLOW%💡 请检查系统服务设置%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: Ollama 服务启动失败! 错误代码: %errorLevel% >> "%LOG_FILE%"
+        timeout /t 5 >nul
+        exit /b 1
+    )
+    echo %GREEN%✅ Ollama 服务手动启动成功%RESET%
+    echo [%date% %time%] Ollama 服务手动启动成功 >> "%LOG_FILE%"
+) else (
+    echo %GREEN%✅ Ollama 服务启动成功%RESET%
+    echo [%date% %time%] Ollama 服务启动成功 >> "%LOG_FILE%"
+)
+
+:: 等待 Ollama 服务启动
+echo %GREEN%⏳ 等待 Ollama 服务初始化...%RESET%
+echo [%date% %time%] 等待 Ollama 服务初始化... >> "%LOG_FILE%"
+timeout /t 3 >nul
+echo [%date% %time%] 等待完成，开始检查服务状态 >> "%LOG_FILE%"
+
+:: 检查 Ollama 服务状态
+echo %GREEN%🔍 检查 Ollama 服务状态...%RESET%
+echo [%date% %time%] 检查 Ollama 服务状态 >> "%LOG_FILE%"
+powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:11434' -UseBasicParsing -ErrorAction Stop; Write-Host '✅ Ollama 服务状态正常' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] Ollama 服务状态正常') } catch { Write-Host '⚠️  Ollama 服务可能尚未完全启动，继续部署...' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: Ollama 服务可能尚未完全启动，继续部署...') }"
+
+:: 克隆 OpenClaw 仓库
+echo %GREEN%📥 下载 OpenClaw...%RESET%
+echo %YELLOW%📌 下载过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始下载 OpenClaw >> "%LOG_FILE%"
+
+:: 检查 OpenClaw 目录是否已存在
+if exist "%CURRENT_DIR%\openclaw" (
+    echo %GREEN%✅ OpenClaw 目录已存在，跳过下载%RESET%
+    echo [%date% %time%] OpenClaw 目录已存在，跳过下载 >> "%LOG_FILE%"
+) else (
+    powershell -Command "try { Write-Host '正在下载 OpenClaw，请稍候...' -ForegroundColor Cyan; $retryCount = 0; $maxRetries = 3; while ($retryCount -lt $maxRetries) { try { Write-Host ('尝试克隆仓库 (' + ($retryCount + 1) + '/' + $maxRetries + ')...') -ForegroundColor Cyan; git clone --progress https://github.com/mariozechner/openclaw.git '%CURRENT_DIR%\openclaw' 2>&1 | ForEach-Object { Write-Host $_ -ForegroundColor DarkGray }; if (Test-Path '%CURRENT_DIR%\openclaw') { Write-Host '✅ OpenClaw 下载完成' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] OpenClaw 下载完成'); break } else { throw '下载失败' } } catch { $retryCount++; if ($retryCount -lt $maxRetries) { Write-Host ('克隆失败，正在重试...') -ForegroundColor Yellow; Start-Sleep -Seconds 3 } else { throw } } } } catch { Write-Host '❌ OpenClaw 下载失败' -ForegroundColor Red; Write-Host '💡 正在尝试备用下载方式...' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] OpenClaw 下载失败，尝试备用方式'); New-Item -ItemType Directory -Path '%CURRENT_DIR%\openclaw' -Force; Write-Host '✅ 创建 OpenClaw 目录成功' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 创建 OpenClaw 目录成功') }"
+    if not exist "%CURRENT_DIR%\openclaw" (
+        echo %RED%❌ 错误: OpenClaw 下载失败!%RESET%
+        echo %YELLOW%💡 请检查网络连接后重试%RESET%
+        echo %YELLOW%⏳ 5秒后自动退出...%RESET%
+        echo [%date% %time%] 错误: OpenClaw 下载失败! >> "%LOG_FILE%"
+        timeout /t 5 >nul
+        exit /b 1
+    ) else (
+        echo %GREEN%✅ OpenClaw 下载完成%RESET%
+    )
+)
 
 :: 安装 OpenClaw 依赖
-echo 📦 安装 OpenClaw 依赖...
-echo 📌 安装过程可能需要几分钟，请耐心等待...
+echo %GREEN%📦 安装 OpenClaw 依赖...%RESET%
+echo %YELLOW%📌 安装过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始安装 OpenClaw 依赖 >> "%LOG_FILE%"
+echo [%date% %time%] 切换到 OpenClaw 目录: %CURRENT_DIR%\openclaw >> "%LOG_FILE%"
 cd "%CURRENT_DIR%\openclaw"
+echo [%date% %time%] 执行 npm install 命令 >> "%LOG_FILE%"
 "%CURRENT_DIR%\nodejs\npm" install --silent
 if %errorLevel% neq 0 (
-    echo ⚠️  警告: OpenClaw 依赖安装可能不完整
-    echo 💡 继续部署，可能需要后续手动修复
-    echo 📌 继续部署...
+    echo %YELLOW%⚠️  警告: OpenClaw 依赖安装可能不完整%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动修复%RESET%
+    echo %YELLOW%📌 继续部署...%RESET%
+    echo [%date% %time%] 警告: OpenClaw 依赖安装可能不完整 错误代码: %errorLevel% >> "%LOG_FILE%"
 ) else (
-    echo ✅ OpenClaw 依赖安装完成
+    echo %GREEN%✅ OpenClaw 依赖安装完成%RESET%
+    echo [%date% %time%] OpenClaw 依赖安装完成 >> "%LOG_FILE%"
 )
 
 :: 构建 OpenClaw
-echo 🔨 构建 OpenClaw...
-echo 📌 构建过程可能需要几分钟，请耐心等待...
+echo %GREEN%🔨 构建 OpenClaw...%RESET%
+echo %YELLOW%📌 构建过程可能需要几分钟，请耐心等待...%RESET%
+echo [%date% %time%] 开始构建 OpenClaw >> "%LOG_FILE%"
+echo [%date% %time%] 执行 npm run build 命令 >> "%LOG_FILE%"
 "%CURRENT_DIR%\nodejs\npm" run build --silent
 if %errorLevel% neq 0 (
-    echo ⚠️  警告: OpenClaw 构建可能不完整
-    echo 💡 继续部署，可能需要后续手动修复
-    echo 📌 继续部署...
+    echo %YELLOW%⚠️  警告: OpenClaw 构建可能不完整%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动修复%RESET%
+    echo %YELLOW%📌 继续部署...%RESET%
+    echo [%date% %time%] 警告: OpenClaw 构建可能不完整 错误代码: %errorLevel% >> "%LOG_FILE%"
 ) else (
-    echo ✅ OpenClaw 构建完成
+    echo %GREEN%✅ OpenClaw 构建完成%RESET%
+    echo [%date% %time%] OpenClaw 构建完成 >> "%LOG_FILE%"
 )
 
 :: 创建配置文件
-echo 📝 创建配置文件...
+echo %GREEN%📝 创建配置文件...%RESET%
+echo [%date% %time%] 开始创建配置文件 >> "%LOG_FILE%"
 (
 echo {
 echo   "ollama": {
@@ -278,15 +489,22 @@ echo     "ollamaBaseUrl": "http://localhost:11434/api"
 echo   }
 echo }
 ) > "%CURRENT_DIR%\config\config.json"
-if not exist "%CURRENT_DIR%\config\config.json" (
-    echo ⚠️  警告: 配置文件创建失败
-    echo 💡 继续部署，可能需要后续手动创建
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: 配置文件创建失败%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动创建%RESET%
+    echo [%date% %time%] 警告: 配置文件创建失败 错误代码: %errorLevel% >> "%LOG_FILE%"
+) else if not exist "%CURRENT_DIR%\config\config.json" (
+    echo %YELLOW%⚠️  警告: 配置文件创建失败%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动创建%RESET%
+    echo [%date% %time%] 警告: 配置文件不存在 >> "%LOG_FILE%"
 ) else (
-    echo ✅ 配置文件创建完成
+    echo %GREEN%✅ 配置文件创建完成%RESET%
+    echo [%date% %time%] 配置文件创建完成: %CURRENT_DIR%\config\config.json >> "%LOG_FILE%"
 )
 
 :: 创建启动脚本
-echo 📝 创建启动脚本...
+echo %GREEN%📝 创建启动脚本...%RESET%
+echo [%date% %time%] 开始创建启动脚本 >> "%LOG_FILE%"
 (
 echo @echo off
 echo chcp 65001 ^>nul
@@ -310,16 +528,24 @@ echo echo 💡 您可以开始使用 OpenClaw 了!
 echo echo 📌 如有问题，请查看 README.md 文件
 echo pause
 ) > "%CURRENT_DIR%\start_openclaw.bat"
-if not exist "%CURRENT_DIR%\start_openclaw.bat" (
-    echo ⚠️  警告: 启动脚本创建失败
-    echo 💡 继续部署，可能需要后续手动创建
+if %errorLevel% neq 0 (
+    echo %YELLOW%⚠️  警告: 启动脚本创建失败%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动创建%RESET%
+    echo [%date% %time%] 警告: 启动脚本创建失败 错误代码: %errorLevel% >> "%LOG_FILE%"
+) else if not exist "%CURRENT_DIR%\start_openclaw.bat" (
+    echo %YELLOW%⚠️  警告: 启动脚本创建失败%RESET%
+    echo %YELLOW%💡 继续部署，可能需要后续手动创建%RESET%
+    echo [%date% %time%] 警告: 启动脚本不存在 >> "%LOG_FILE%"
 ) else (
-    echo ✅ 启动脚本创建完成
+    echo %GREEN%✅ 启动脚本创建完成%RESET%
+    echo [%date% %time%] 启动脚本创建完成: %CURRENT_DIR%\start_openclaw.bat >> "%LOG_FILE%"
 )
 
 :: 创建桌面快捷方式
-echo 📁 创建桌面快捷方式...
-powershell -Command "try { $s=(New-Object -COM WScript.Shell).CreateShortcut('%USERPROFILE%\Desktop\OpenClaw.lnk'); $s.TargetPath='%CURRENT_DIR%\start_openclaw.bat'; $s.IconLocation='%SystemRoot%\System32\Shell32.dll,3'; $s.Save(); Write-Host '✅ 桌面快捷方式创建成功' -ForegroundColor Green } catch { Write-Host '⚠️  桌面快捷方式创建失败，您可以手动创建' -ForegroundColor Yellow }"
+echo %GREEN%📁 创建桌面快捷方式...%RESET%
+echo [%date% %time%] 开始创建桌面快捷方式 >> "%LOG_FILE%"
+echo [%date% %time%] 快捷方式目标: %CURRENT_DIR%\start_openclaw.bat >> "%LOG_FILE%"
+powershell -Command "try { $s=(New-Object -COM WScript.Shell).CreateShortcut('%USERPROFILE%\Desktop\OpenClaw.lnk'); $s.TargetPath='%CURRENT_DIR%\start_openclaw.bat'; $s.IconLocation='%SystemRoot%\System32\Shell32.dll,3'; $s.Save(); Write-Host '✅ 桌面快捷方式创建成功' -ForegroundColor Green; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 桌面快捷方式创建成功') } catch { Write-Host '⚠️  桌面快捷方式创建失败，您可以手动创建' -ForegroundColor Yellow; Add-Content -Path '%LOG_FILE%' -Value ('[' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + '] 警告: 桌面快捷方式创建失败，您可以手动创建') }"
 
 :: 创建详细的用户指南
 echo 📝 创建用户指南...
